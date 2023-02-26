@@ -27,6 +27,9 @@ public class Model extends Observable {
      */
     private boolean gameOver;
 
+    private boolean change = false;
+
+
     /* Coordinate System: column C, row R of the board (where row 0,
      * column 0 is the lower-left corner of the board) will correspond
      * to board.tile(c, r).  Be careful! It works like (x, y) coordinates.
@@ -137,40 +140,60 @@ public class Model extends Observable {
      * and the trailing tile does not.
      */
     public boolean tilt(Side side) {
-        boolean changed;
-        changed = false;
         int end = 3;
-        int num_null = 0;
-        if (side == Side.NORTH) {
-            for (int r = 3; r >= 0; r--) {
-
-                if (board.tile(0, r) == null) {
-                    if (num_null < 1) {
-                        end = r;
-                    }
-                    num_null++;
-                }
-                if (board.tile(0, r) != null) {
-                    Tile t = board.tile(0, r);
-                    board.move(0, end, t);
-                    end = r - 1;
-                    num_null = 0;
-                    changed = true;
-                }
-            }
-
-        }
-
-
-        // TODO: Modify this.board (and perhaps this.score) to account
-        // for the tilt to the Side SIDE. If the board changed, set the
-        // changed local variable to true.
-
+        board.setViewingPerspective(side);
+        northTilt(end);
+        board.setViewingPerspective(Side.NORTH);
         checkGameOver();
-        if (changed) {
+        if (change) {
             setChanged();
         }
-        return changed;
+        return change;
+    }
+
+    public void northTilt(int end) {
+        for (int c = 0; c < 4; c++) {
+            for (int r = 3; r >= 0; r--) {
+                Tile t1 = board.tile(c, r);
+                if (t1 == null) {
+                } else {
+                    if (r == 0) {
+                        board.move(c, end, t1);
+                    }
+                    for (int row2 = r - 1; row2 >= 0; row2--) {
+                        Tile t2 = board.tile(c, row2);
+                        //compare != null
+                        if (t2 != null) {
+                            if (t2.value() == t1.value()) {
+                                board.move(c, end, t1);
+                                board.move(c, end, t2);
+                                score = score + t1.value() * 2;
+                                end--;
+                                r = row2;
+                                change = true;
+                                break;
+                            } else {
+                                board.move(c, end, t1);
+                                change = true;
+                                end--;
+                                break;
+                            }
+                        } // compare == null
+                        else {
+                            if (row2 == 0) {
+                                board.move(c, end, t1);
+                                if (end != r) {
+                                    change = true;
+                                }
+                                end--;
+                            }
+                        }
+                    }
+                }
+            }
+            end = 3;
+        }
+
     }
 
     /**
